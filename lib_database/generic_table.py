@@ -14,14 +14,33 @@ class GenericTable(Database):
 
     __slots__ = ["name", "id_col"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, clear=False, **kwargs):
         """Validates name subclass attr. Creates data dir. Inits tables"""
 
         assert hasattr(self, "name"), "Subclass MUST have a table name attr"
         id_col_err = "Subclass must have an id_col attr, even if it's None"
         assert hasattr(self, "id_col"), id_col_err
 
-        super(GenericTable, self).__init__(*args, **kwargs)
+        # Clears table
+        if clear:
+            self.clear_table()
+
+        # Creates table
+        self.create_table()
+
+        super(GenericTable, self).__init__(**kwargs)
+
+    def clear_table(self):
+        """Clears the table"""
+
+        logging.debug(f"Dropping {self.name} Table")
+        self.execute(f"DROP TABLE IF EXISTS {self.name} CASCADE")
+        logging.debug(f"{self.name} Table dropped")
+
+    def create_table(self):
+        """A function to be inherited that creates the table"""
+
+        pass
 
     def insert(self, data: dict):
         """Inserts a dictionary into the database, and returns id_col"""
@@ -62,14 +81,7 @@ class GenericTable(Database):
         sql = sql if sql else f"SELECT COUNT(*) FROM {self.name}"
         return self.execute(sql, data)[0]["count"]
 
-    def clear_table(self):
-        """Clears the table"""
-
-        logging.debug(f"Dropping {self.name} Table")
-        self.execute(f"DROP TABLE IF EXISTS {self.name} CASCADE")
-        logging.debug(f"{self.name} Table dropped")
-
-    def copy_table(self, path: str):
+    def copy_table_to_tsv(self, path: str):
         """Copies table to a specified path"""
 
         logging.debug(f"Copying file from {self.name} to {path}")

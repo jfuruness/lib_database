@@ -11,16 +11,10 @@ class Database:
 
     default_database = "main"
 
-    def __init__(self, cursor_factory=RealDictCursor, clear=False):
+    def __init__(self, cursor_factory=RealDictCursor):
         """Create a new connection with the database"""
 
         self._connect(cursor_factory)
-        # Creates tables if they do not exist
-        if hasattr(self, "_create_tables"):
-            self._create_tables()
-        # Clears tables if they do not exist
-        if clear and hasattr(self, "clear_table"):
-            self.clear_table()
 
     def __enter__(self):
         return self
