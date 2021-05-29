@@ -1,83 +1,50 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""This module contains class Database. See README for in depth details
-
-originally from lib_bgp_data"""
-
-__authors__ = ["Justin Furuness"]
-__credits__ = ["Justin Furuness"]
-__maintainer__ = "Justin Furuness"
-__email__ = "jfuruness@gmail.com"
-
-
 import logging
-import os
-import time
-
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from .postgres import Postgres
-
-from lib_utils.utils import config_logging
-from lib_utils import utils
+from lib_config import Config
+from lib_utils.helper_funcs import retry
 
 
-class Database(Postgres):
-    """Interact with the database"""
+class Database:
+    """Interact with the database. See README for further details"""
 
-    __slots__ = ['conn', 'cursor', '_clear']
+    default_database = "main"
 
     def __init__(self, cursor_factory=RealDictCursor, clear=False):
         """Create a new connection with the database"""
 
-        # Initializes self.logger
-        config_logging()
         self._connect(cursor_factory)
-        self._clear = clear
+        # Creates tables if they do not exist
+        if hasattr(self, "_create_tables"):
+            self._create_tables()
+        # Clears tables if they do not exist
+        if clear and hasattr(self, "clear_table"):
+            self.clear_table()
 
     def __enter__(self):
-        """This allows this class to be used as a context manager
-        With this you don't need to worry about closing connections.
-        """
-
-        # Checks if it has attributes, because this parent class does not
-        # Only the generic table has these attributes
-        # If clear is set clear the table
-        if self._clear and hasattr(self, "clear_table"):
-            self.clear_table()
         return self
 
     def __exit__(self, type, value, traceback):
-        """Closes connection, exits contextmanager"""
-
         self.close()
-        
+
+    @retry(psycopg2.OperationalError, msg="DB connection failure", sleep=10)
     def _connect(self, cursor_factory=RealDictCursor):
         """Connects to db with default RealDictCursor.
         Note that RealDictCursor returns everything as a dictionary."""
-        # Database needs access to the section header
-        kwargs = Config().get_db_creds()
-        if cursor_factory:
-            kwargs["cursor_factory"] = cursor_factory
-        # In case the database is somehow off we wait
-        for i in range(10):
-            try:
-                conn = psycopg2.connect(**kwargs)
 
-                logging.debug("Database Connected")
-                self.conn = conn
-                # Automatically execute queries
-                self.conn.autocommit = True
-                self.cursor = conn.cursor()
-                break
-            except psycopg2.OperationalError as e:
-                logging.warning(f"Couldn't connect to db {e}")
-                time.sleep(10)
-        if hasattr(self, "_create_tables"):
-            # Creates tables if do not exist
-            self._create_tables()
+        # Database needs access to the section header
+        with Config(write=False) as conf_dict:
+            conf_dict[self.default_database]["cursor_factory"] = cursor_factory
+
+        # In case the database is somehow off we wait
+        _conn = psycopg2.connect(**conf_dict)
+
+        logging.debug("Database Connected")
+        self._conn = _conn
+        # Automatically execute queries
+        self._conn.autocommit = True
+        self._cursor = _conn.cursor()
 
     def execute(self, sql: str, data: iter = []) -> list:
         """Executes a query. Returns [] if no results."""
@@ -88,11 +55,11 @@ class Database(Postgres):
 
         try:
             return self.cursor.fetchall()
-        except psycopg2.ProgrammingError as e:
+        except psycopg2.ProgrammingError:
             return []
 
     def close(self):
         """Closes the database connection correctly"""
 
-        self.cursor.close()
-        self.conn.close()
+        self._cursor.close()
+        self._conn.close()
