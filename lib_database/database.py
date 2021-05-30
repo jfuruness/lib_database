@@ -11,10 +11,11 @@ class Database:
 
     default_database = "main"
 
-    def __init__(self, cursor_factory=RealDictCursor):
+    def __init__(self, database=None, cursor_factory=RealDictCursor):
         """Create a new connection with the database"""
 
-        self._connect(cursor_factory)
+        db = database if database else self.default_database
+        self._connect(db, cursor_factory)
 
     def __enter__(self):
         return self
@@ -23,13 +24,13 @@ class Database:
         self.close()
 
     @retry(psycopg2.OperationalError, msg="DB connection failure", sleep=10)
-    def _connect(self, cursor_factory=RealDictCursor):
+    def _connect(self, database, cursor_factory):
         """Connects to db with default RealDictCursor.
         Note that RealDictCursor returns everything as a dictionary."""
 
         # Database needs access to the section header
         with Config(write=False) as conf_dict:
-            conf_dict[self.default_database]["cursor_factory"] = cursor_factory
+            conf_dict[database]["cursor_factory"] = cursor_factory
 
         # In case the database is somehow off we wait
         _conn = psycopg2.connect(**conf_dict)
