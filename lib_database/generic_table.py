@@ -21,14 +21,15 @@ class GenericTable(Database):
         id_col_err = "Subclass must have an id_col attr, even if it's None"
         assert hasattr(self, "id_col"), id_col_err
 
+        # Connect
+        super(GenericTable, self).__init__(**kwargs)
+
         # Clears table
         if clear:
             self.clear_table()
 
         # Creates table
         self.create_table()
-
-        super(GenericTable, self).__init__(**kwargs)
 
     def clear_table(self):
         """Clears the table"""

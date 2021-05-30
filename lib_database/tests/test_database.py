@@ -1,4 +1,4 @@
-from psycopg2.extras import NamedTupleCursor
+import psycopg2.extras
 import pytest
 
 from ..database import Database
@@ -25,7 +25,7 @@ class TestDatabase:
 
         with Database() as db:
             rows = db.execute(f"SELECT * FROM {TestTable.name}")
-            assert rows = len(TestTable.default_rows)
+            TestTable.match_default_rows(rows)
 
     def test_non_default_database(self, TestTable):
         """Tests connection with non default database"""
@@ -34,32 +34,50 @@ class TestDatabase:
         Database.default_database = "non_default"
         with Database(database=og_default) as db:
             rows = db.execute(f"SELECT * FROM {TestTable.name}")
-            assert rows = len(TestTable.default_rows)
+            TestTable.match_default_rows(rows)
         Database.default_database = og_default
 
-    def test_invalid_database(self):
-        """Tests connection with invalid database"""
+    @pytest.mark.skip(reason="Come back to later for clearer err handling")
+    def test_db_not_in_config(self):
+        """Tests connection with no database in config"""
 
-        with Database(database="invalid") as db:
-            assert False, "Figure out this error then assert it occurs"
+        pass
+
+    @pytest.mark.skip(reason="Come back to later for clearer err handling")
+    def test_config_creds_wrong(self):
+        """Tests connection with incorrect creds in config"""
+
+        pass
+
+    @pytest.mark.skip(reason="Come back to later for clearer err handling")
+    def test_config_partial_creds(self):
+        """Tests connection with partial creds in config"""
+
+        pass
+
+    @pytest.mark.skip(reason="Come back to later for clearer err handling")
+    def test_config_database_does_not_exist(self):
+        """Tests connection with config section but no database"""
+
+        pass
 
     def test_execute_no_data_yes_return(self, TestTable):
         """Tests the execute function with no data and expects return"""
 
         with Database() as db:
             rows = db.execute(f"SELECT * FROM {TestTable.name}")
-            assert len(rows) == len(TestTable.default_rows)
+            TestTable.match_default_rows(rows)
 
     def test_execute_yes_data_yes_return(self, TestTable):
         """Tests the execute function with data and expects return"""
 
         with Database() as db:
             sql = f"SELECT * FROM {TestTable.name} WHERE col1 = %s"
-            rows = db.execute(sql, TestTable.default_rows[0]["col1"])
+            rows = db.execute(sql, [TestTable.default_rows[0]["col1"]])
             # Test Table rows are unique
             assert len(rows) == 1
 
-    def test_execute_no_data_no_return(self):
+    def test_execute_no_data_no_return(self, TestTable):
         """Tests the execute function with no data and expects no return"""
 
         with Database() as db:
@@ -67,8 +85,7 @@ class TestDatabase:
             rows = db.execute(sql)
             assert len(rows) == 0
 
-
-    def test_execute_yes_data_no_return(self):
+    def test_execute_yes_data_no_return(self, TestTable):
         """Tests the execute function with data and expects no return"""
 
         with Database() as db:
@@ -80,10 +97,11 @@ class TestDatabase:
     def test_cursor_factory(self, TestTable):
         """Tests that the cursor factor argument can be set"""
 
-        with Database(cursor_factory=NamedTupleCursor) as db:
-            rows = db.execute(f"SELECT * FROM {TestTable.name}")
-            for row in rows:
-                print(row)
-                print(type(row))
-                assert False, "Make sure this is a named tuple and not a dict"
-            
+        with Database() as db:
+            real_dict_rows = db.execute(f"SELECT * FROM {TestTable.name}")
+
+        with Database(cursor_factory=psycopg2.extras.NamedTupleCursor) as db:
+            named_tuple_rows = db.execute(f"SELECT * FROM {TestTable.name}")
+            # There doesn't seem to be a way to access the named tuple class
+            # Because of this, we can just check to make sure it's not equal
+            assert type(real_dict_rows[0]) != type(named_tuple_rows[0])

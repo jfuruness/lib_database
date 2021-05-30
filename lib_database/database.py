@@ -30,26 +30,25 @@ class Database:
 
         # Database needs access to the section header
         with Config(write=False) as conf_dict:
-            conf_dict[database]["cursor_factory"] = cursor_factory
+            # In case the database is somehow off we wait
+            _conn = psycopg2.connect(cursor_factory=cursor_factory,
+                                     **conf_dict[database])
 
-        # In case the database is somehow off we wait
-        _conn = psycopg2.connect(**conf_dict)
-
-        logging.debug("Database Connected")
-        self._conn = _conn
-        # Automatically execute queries
-        self._conn.autocommit = True
-        self._cursor = _conn.cursor()
+            logging.debug("Database Connected")
+            self._conn = _conn
+            # Automatically execute queries
+            self._conn.autocommit = True
+            self._cursor = _conn.cursor()
 
     def execute(self, sql: str, data: iter = []) -> list:
         """Executes a query. Returns [] if no results."""
 
         assert (isinstance(data, list)
                 or isinstance(data, tuple)), "Data must be list/tuple"
-        self.cursor.execute(sql, data)
+        self._cursor.execute(sql, data)
 
         try:
-            return self.cursor.fetchall()
+            return self._cursor.fetchall()
         except psycopg2.ProgrammingError:
             return []
 
