@@ -82,20 +82,9 @@ class GenericTable(Database):
         sql = sql if sql else f"SELECT COUNT(*) FROM {self.name}"
         return self.execute(sql, data)[0]["count"]
 
-    def copy_table_to_tsv(self, path: str):
+    def copy_to_tsv(self, path: str):
         """Copies table to a specified path"""
 
         logging.debug(f"Copying file from {self.name} to {path}")
         self.execute(f"COPY {self.name} TO %s DELIMITER '\t';", [path])
         logging.debug("Copy complete")
-
-    @property
-    def columns(self) -> list:
-        """Returns the columns of the table
-
-        used in utils to insert csv into the database"""
-
-        sql = """SELECT column_name FROM information_schema.columns
-              WHERE table_schema = 'public' AND table_name = %s;"""
-
-        return [x['column_name'] for x in self.execute(sql, [self.name])]
