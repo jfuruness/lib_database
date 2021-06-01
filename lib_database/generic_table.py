@@ -38,11 +38,6 @@ class GenericTable(Database):
         self.execute(f"DROP TABLE IF EXISTS {self.name} CASCADE")
         logging.debug(f"{self.name} Table dropped")
 
-    def create_table(self):
-        """A function to be inherited that creates the table"""
-
-        pass
-
     def insert(self, data: dict):
         """Inserts a dictionary into the database, and returns id_col"""
 
