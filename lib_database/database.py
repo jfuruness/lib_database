@@ -14,8 +14,8 @@ class Database:
     def __init__(self, database=None, cursor_factory=RealDictCursor):
         """Create a new connection with the database"""
 
-        db = database if database else self.default_database
-        self._connect(db, cursor_factory)
+        self.db = database if database else self.default_database
+        self._connect(self.db, cursor_factory)
 
     def __enter__(self):
         return self

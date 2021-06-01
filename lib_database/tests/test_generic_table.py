@@ -122,7 +122,6 @@ class TestGenericTable:
         data = [row[k] for k in ["col1", "col2"]]
         assert test_table.get_count(sql, data) == 1
 
-    @pytest.mark.skip(reason="Must be a superuser")
     def test_copy_to_tsv(self, test_table):
         """Tests that a table can be copied to a TSV file"""
 

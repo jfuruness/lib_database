@@ -2,6 +2,9 @@ import logging
 
 import numpy as np
 
+from lib_config import Config
+from lib_utils.helper_funcs import run_cmds
+
 from .database import Database
 
 
@@ -76,7 +79,6 @@ class GenericTable(Database):
             assert sql
 
         sql = sql if sql else f"SELECT COUNT(*) FROM {self.name}"
-        input(self.execute(sql, data))
         return self.execute(sql, data)[0]["count"]
 
     def copy_to_tsv(self, path: str):
@@ -85,6 +87,19 @@ class GenericTable(Database):
         logging.debug(f"Copying file from {self.name} to {path}")
         # NOTE: can't use the easy method due to AWS
         # self.execute(f"COPY {self.name} TO %s DELIMITER '\t';", [path])
-        
-        run_cmds(
+        with Config(write=False) as conf_dict:
+            creds = conf_dict[self.db]
+            logging.warning("Exposing password like this is insecure!!")
+            cmd = (f"export PGPASSWORD={creds['password']} && "
+                   f"psql --host={creds['host']} "
+                   f"--port={creds['port']} "
+                   f"--username={creds['user']} "
+                   #f"--password "
+                   f"--dbname={creds['database']} "
+                   r""" -c "\COPY """
+                   f"{self.name} TO {path} "
+                   r"""DELIMITER E'\t';" """)
+            logging.info("Attempting to copy table. "
+                         "About to ask for db password")
+            run_cmds(cmd)
         logging.debug("Copy complete")
