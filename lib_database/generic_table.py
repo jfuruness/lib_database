@@ -39,11 +39,15 @@ class GenericTable(Database):
 
         assert isinstance(data, dict)
 
+        #  NOTE: you only need to convert lists for CSVs!!! Not here...
         for key, val in data.items():
-            for list_type in GenericTable.iter_types():
-                if isinstance(val, list_type):
-                    data[key] = "{" + ", ".join([str(x) for x in val]) + "}"
-
+            # Can't have this in one place because numpy.ndarray is the type
+            # But numpy.array is the comprehension
+            if isinstance(val, tuple):
+                data[key] = list(data[key])
+            elif isinstance(val, np.ndarray):
+                # Must convert inner types to not be numpy types
+                data[key] = list(float(x) for x in data[key])
         values_str = ", ".join(["%s"] * len(data))
 
         sql = f"""INSERT INTO {self.name} ({",".join(data.keys())})
@@ -60,10 +64,6 @@ class GenericTable(Database):
         if self.id_col:
             return result[0][self.id_col]
 
-    @staticmethod
-    def iter_types(self):
-        return [list, tuple, np.ndarray]
-
     def get_all(self) -> list:
         """Gets all rows from table"""
 
@@ -76,11 +76,15 @@ class GenericTable(Database):
             assert sql
 
         sql = sql if sql else f"SELECT COUNT(*) FROM {self.name}"
+        input(self.execute(sql, data))
         return self.execute(sql, data)[0]["count"]
 
     def copy_to_tsv(self, path: str):
         """Copies table to a specified path"""
 
         logging.debug(f"Copying file from {self.name} to {path}")
-        self.execute(f"COPY {self.name} TO %s DELIMITER '\t';", [path])
+        # NOTE: can't use the easy method due to AWS
+        # self.execute(f"COPY {self.name} TO %s DELIMITER '\t';", [path])
+        
+        run_cmds(
         logging.debug("Copy complete")

@@ -4,7 +4,7 @@ from ..generic_table import GenericTable
 
 
 @pytest.fixture(scope="function")
-def TestTable():
+def test_table():
     """Creates a test table. Adds 1 row. Yields. Deletes."""
 
     class TestTable(GenericTable):
@@ -23,7 +23,7 @@ def TestTable():
             super(TestTable, self).__init__(*args, **kwargs)
 
         def create_table(self):
-            sql = f"""CREATE TABLE {self.name}(
+            sql = f"""CREATE TABLE IF NOT EXISTS {self.name}(
                     col1 INTEGER, col2 INTEGER
                   );"""
             self.execute(sql)
