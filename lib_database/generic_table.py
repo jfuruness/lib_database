@@ -5,10 +5,6 @@ import numpy as np
 from .database import Database
 
 
-class ImproperDevelopment(Exception):
-    pass
-
-
 class GenericTable(Database):
     """Interact with the database. See README for further details"""
 
@@ -44,11 +40,9 @@ class GenericTable(Database):
         assert isinstance(data, dict)
 
         for key, val in data.items():
-            if (isinstance(val, list)
-                    or isinstance(val, np.ndarray)
-                    or isinstance(val, tuple)):
-
-                data[key] = "{" + ", ".join([str(x) for x in val]) + "}"
+            for list_type in GenericTable.iter_types():
+                if isinstance(val, list_type):
+                    data[key] = "{" + ", ".join([str(x) for x in val]) + "}"
 
         values_str = ", ".join(["%s"] * len(data))
 
@@ -66,6 +60,10 @@ class GenericTable(Database):
         if self.id_col:
             return result[0][self.id_col]
 
+    @staticmethod
+    def iter_types(self):
+        return [list, tuple, np.ndarray]
+
     def get_all(self) -> list:
         """Gets all rows from table"""
 
@@ -73,6 +71,9 @@ class GenericTable(Database):
 
     def get_count(self, sql: str = None, data: list = []) -> int:
         """Gets count from table"""
+
+        if data:
+            assert sql
 
         sql = sql if sql else f"SELECT COUNT(*) FROM {self.name}"
         return self.execute(sql, data)[0]["count"]
