@@ -79,6 +79,9 @@ class GenericTable(Database):
             assert sql
 
         sql = sql if sql else f"SELECT COUNT(*) FROM {self.name}"
+
+        assert "count" in sql.lower(), "This is not a count query"
+
         return self.execute(sql, data)[0]["count"]
 
     def copy_to_tsv(self, path: str):
@@ -103,3 +106,15 @@ class GenericTable(Database):
                          "About to ask for db password")
             run_cmds(cmd)
         logging.debug("Copy complete")
+
+    @property
+    def columns(self) -> list:
+        """Returns the columns of the table
+
+        used to insert into the database"""
+
+        sql = """SELECT column_name FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = %s;
+              """
+
+        return [x['column_name'] for x in self.execute(sql, [self.name])]

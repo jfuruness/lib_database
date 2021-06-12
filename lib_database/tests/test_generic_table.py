@@ -133,3 +133,7 @@ class TestGenericTable:
         with open(file_path, "r") as f:
             assert len(f.readlines()) == len(test_table.default_rows)
             delete_paths(file_path)
+
+    @pytest.mark.skip(reason="Added feature later. Needs testing")
+    def test_columns(self):
+        pass
