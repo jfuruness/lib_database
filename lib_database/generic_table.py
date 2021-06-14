@@ -53,14 +53,18 @@ class GenericTable(Database):
                 data[key] = list(float(x) for x in data[key])
         values_str = ", ".join(["%s"] * len(data))
 
-        sql = f"""INSERT INTO {self.name} ({",".join(data.keys())})
-                    values ({values_str})"""
+        sql = (f"INSERT INTO {self.name} ({','.join(data.keys())})"
+               f" VALUES ({values_str})")
 
         if self.id_col:
             sql += f" RETURNING {self.id_col};"
 
-        logging.debug(sql)
+        # https://stackoverflow.com/a/41779401/8903959
+        # If there is no data, replace part of the query
+        sql = sql.replace("() VALUES ()", "DEFAULT VALUES")
 
+        logging.debug(f"About to execute: {sql}")
+        logging.debug(f"With data: {str(data.values())}")
         result = self.execute(sql, tuple(data.values()))
 
         # Return the new ID
