@@ -23,7 +23,7 @@ class Database:
     def __exit__(self, type, value, traceback):
         self.close()
 
-    @retry(psycopg2.OperationalError, msg="DB connection failure", sleep=10)
+    @retry(psycopg2.OperationalError, msg="DB connection failure")
     def _connect(self, database, cursor_factory):
         """Connects to db with default RealDictCursor.
         Note that RealDictCursor returns everything as a dictionary."""

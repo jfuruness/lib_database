@@ -1,1 +1,0 @@
-mantisdatabasemasterpassword --host=mantis.cd386fvez5uu.us-east-2.rds.amazonaws.com --port=5432 --username=postgres --password --dbname=mantis -c \COPY test TO /tmp/test_table.tsv DELIMITER E'\t';
