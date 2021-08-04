@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from lib_config import Config
+from lib_utils import file_funcs
 from lib_utils.helper_funcs import run_cmds
 
 from .database import Database
@@ -87,6 +88,28 @@ class GenericTable(Database):
         assert "count" in sql.lower(), "This is not a count query"
 
         return self.execute(sql, data)[0]["count"]
+
+    def bulk_insert_rows(self, list_of_dicts):
+        """Bulk inserts rows into the database (with a TSV)"""
+
+        with file_funcs.temp_path(path_append=".tsv") as path:
+            self._write_dicts_to_tsv(list_of_dicts, self.columns, path)
+            self.bulk_inset_tsv(path)
+
+    def _write_dicts_to_tsv(self, list_of_dicts, path):
+        """Writes a list of dicts to a TSV for bulk insertion later"""
+
+        logging.debug(f"Writing rows to {path}")
+        with open(path, mode="w") as f:
+            writer = csv.DictWriter(f, fieldnames=self.columns, delimiter="\t")
+            writer.write_rows(list_of_dicts)
+    
+    def bulk_insert_tsv(self, path):
+        """Copies a TSV to the db for bulk insertion"""
+
+        logging.debug(f"Writing {path} to db")
+        with open(path, "r") as f:
+            self._cursor.copy_from(f, self.name, sep="\t", null="")
 
     def copy_to_tsv(self, path: str):
         """Copies table to a specified path"""
