@@ -118,7 +118,9 @@ class GenericTable(Database):
         used to insert into the database"""
 
         sql = """SELECT column_name FROM information_schema.columns
-              WHERE table_schema = 'public' AND table_name = %s;
+              WHERE table_schema = 'public' AND table_name = %s
+                --Without this they are out of order
+                ORDER BY ordinal_position;
               """
 
         return [x['column_name'] for x in self.execute(sql, [self.name])]
