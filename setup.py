@@ -23,6 +23,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'numpy',
+        'psutil',
         'psycopg2-binary',
         'pytest',
     ],

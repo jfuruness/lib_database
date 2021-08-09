@@ -4,6 +4,7 @@ from subprocess import check_output
 
 from psutil import virtual_memory
 
+from lib_config import Config
 from lib_utils import file_funcs
 
 from .postgres_defaults import DEFAULT_CONF_SECTION
@@ -13,13 +14,16 @@ def _write_db_conf(self, conf_section, **kwargs):
 
     logging.info("Writing database config")
     with Config(write=True) as conf_dict:
-        for k, v in self.default_db_kwargs:
+        if conf_section not in conf_dict:
+            conf_dict[conf_section] = {}
+        for k, v in self.default_db_kwargs.items():
             # Get the kwarg, or if not exists, the default_kwarg
             conf_dict[conf_section][k] = kwargs.get(k, v)
         # User is always only used for one db
         # This is because we drop and restore user for each db
         # And set password for each user for each db
-        conf_dict[conf_section]["user"] = conf_section["database"] + "_user"
+        user = conf_dict[conf_section]["database"] + "_user"
+        conf_dict[conf_section]["user"] = user
 
 def _get_db_creds(self, conf_section=DEFAULT_CONF_SECTION):
     """Gets database creds"""
@@ -32,9 +36,9 @@ def _init_db(self, user=None, database=None, host=None, password=None):
     """Creates database and user and configures it for access"""
 
     logging.info("Initializing database")
-    sqls = [f"DROP DATABASE {database};",
-            f"DROP OWNED BY {user};",
-            f"DROP USER {user};",
+    sqls = [f"DROP DATABASE IF EXISTS {database};",
+            #f"DROP OWNED BY {user} IF EXISTS;",
+            f"DROP USER IF EXISTS {user};",
             f"CREATE DATABASE {database};",
             f"CREATE USER {user};",
             f"REVOKE CONNECT ON DATABASE {database} FROM PUBLIC;",
@@ -45,7 +49,7 @@ def _init_db(self, user=None, database=None, host=None, password=None):
             f"ALTER USER {user} WITH PASSWORD '{password}';",
             f"ALTER USER {user} WITH SUPERUSER;"]
 
-    self._run_sql_cmds(sqls)
+    self.run_sql_cmds(sqls)
     file_funcs.delete_paths("/var/lib/postgresql.psql_history")
 
 def _modify_db(self, db=None, ram=None, cpus=cpu_count() - 1, ssd=True):
@@ -101,8 +105,8 @@ def _modify_db(self, db=None, ram=None, cpus=cpu_count() - 1, ssd=True):
             # https://www.postgresql.org/docs/9.1/runtime-config-resource.html
             # Subtract one megabyte for safety
             "ALTER SYSTEM SET max_stack_depth TO "
-            f"'{self._get_ulimit() - 1000}KB';"]
-    self._run_sql_cmds(sqls)
+            f"'{self._get_ulimit() - 1000}kB';"]
+    self.run_sql_cmds(sqls)
     self.restart_postgres()
 
 def _get_ram(self):
