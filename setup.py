@@ -10,10 +10,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(    
     name="lib_database",
-    author="Justin Furuness",
+    author="Justin Furuness, Matt Jaccino, Tony Zheng, Cameron Morris",
     author_email="jfuruness@gmail.com",
-    maintainer="Justin Furuness",
-    maintainer_email="jfuruness@gmail.com",
     version="0.0.1",
     url="https://github.com/jfuruness/lib_database.git",
     download_url='https://github.com/jfuruness/lib_database.git',
