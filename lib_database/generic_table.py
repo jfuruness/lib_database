@@ -94,23 +94,25 @@ class GenericTable(Database):
         """Bulk inserts rows into the database (with a TSV)"""
 
         with file_funcs.temp_path(path_append=".tsv") as path:
-            self._write_dicts_to_tsv(list_of_dicts, path)
+            file_funcs.write_dicts_to_tsv(list_of_dicts, path)
             self.bulk_insert_tsv(path)
 
-    def _write_dicts_to_tsv(self, list_of_dicts, path):
-        """Writes a list of dicts to a TSV for bulk insertion later"""
-
-        logging.debug(f"Writing rows to {path}")
-        with open(path, mode="w") as f:
-            writer = csv.DictWriter(f, fieldnames=self.columns, delimiter="\t")
-            writer.writerows(list_of_dicts)
-    
     def bulk_insert_tsv(self, path):
         """Copies a TSV to the db for bulk insertion"""
 
         logging.debug(f"Writing {path} to db")
         with open(path, "r") as f:
-            self._cursor.copy_from(f, self.name, sep="\t", null="")
+            input(f"stop here and write sql to copy {path}")
+            sql = f"""COPY {self.name}
+                    FROM '{path}'
+                  DELIMITER E'\t' CSV HEADER NULL AS '';"""
+            self.run_sql_cmds([sql], database=self._database)
+            # Note that there is a copy_expert function
+            # But that reads from stdin, which I'd imagine is slower
+            # Than just copying from the file
+            # This matters for 100GB worth of files
+            # The below does not work with headers
+            #self._cursor.copy_from(f, self.name, sep="\t", null="")
 
     def copy_to_tsv(self, path: str):
         """Copies table to a specified path"""

@@ -86,15 +86,19 @@ class Postgres:
             for section_to_delete in sections_to_delete:
                 del conf_dict[section_to_delete]
 
-    def run_sql_cmds(self, sqls: list):
+    def run_sql_cmds(self, sqls: list, database=None):
         """Runs SQL commands"""
 
         assert isinstance(sqls, list), "Must be a list of SQL commands"
         for sql in sqls:
             assert sql[-1] == ";", f"{sql} statement has no ;"
-            helper_funcs.run_cmds(self._get_sql_bash(sql))
+            helper_funcs.run_cmds(self._get_sql_bash(sql, database=database))
 
-    def _get_sql_bash(self, sql):
+    def _get_sql_bash(self, sql, database=None):
         """Returns SQL turned into bash"""
 
-        return f'sudo -u postgres psql -c "{sql}"'
+        bash = "sudo -u postgres psql "
+        if database:
+            bash += f"-d {database} "
+        bash += f'-c "{sql}"'
+        return bash

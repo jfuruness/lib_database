@@ -28,9 +28,11 @@ class Database(Postgres):
         """Connects to db with default RealDictCursor.
         Note that RealDictCursor returns everything as a dictionary."""
 
+        db_creds = self._get_db_creds(config_section)
+        self._database = db_creds["database"]
+        
         # In case the database is somehow off we wait
-        _conn = psycopg2.connect(cursor_factory=cursor_factory,
-                                 **self._get_db_creds(config_section))
+        _conn = psycopg2.connect(cursor_factory=cursor_factory, **db_creds)
 
         logging.debug("Database Connected")
         self._conn = _conn
