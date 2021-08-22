@@ -102,7 +102,6 @@ class GenericTable(Database):
 
         logging.debug(f"Writing {path} to db")
         with open(path, "r") as f:
-            input(f"stop here and write sql to copy {path}")
             sql = f"""COPY {self.name}
                     FROM '{path}'
                   DELIMITER E'\t' CSV HEADER NULL AS '';"""
